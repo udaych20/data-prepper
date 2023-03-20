@@ -55,7 +55,6 @@ public class S3ScanObjectWorkerIT {
     private static final int TIMEOUT_IN_MILLIS = 200;
     private Buffer<Record<Event>> buffer;
     private S3ObjectPluginMetrics s3ObjectPluginMetrics;
-    private Duration bufferTimeout;
     private EventMetadataModifier eventMetadataModifier;
     private BucketOwnerProvider bucketOwnerProvider;
     private S3Client s3Client;

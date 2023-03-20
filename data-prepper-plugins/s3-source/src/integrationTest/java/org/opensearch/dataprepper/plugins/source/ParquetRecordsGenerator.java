@@ -1,6 +1,5 @@
 package org.opensearch.dataprepper.plugins.source;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.hadoop.conf.Configuration;
@@ -12,6 +11,8 @@ import org.apache.parquet.hadoop.util.HadoopOutputFile;
 import org.apache.parquet.io.OutputFile;
 import org.opensearch.dataprepper.model.event.Event;
 import org.opensearch.dataprepper.plugins.source.codec.Codec;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -27,13 +28,13 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 public class ParquetRecordsGenerator implements RecordsGenerator{
 
+    private static final Logger LOG = LoggerFactory.getLogger(ParquetRecordsGenerator.class);
     public static final String EVENT_VERSION_FIELD = "eventVersion";
     public static final String PARQUET_CHECKSUM = ".crc";
     public static final String SERIAL_NUMBER_FIELD = "SlNo";
     public static final String EVENT_VERSION_VALUE = "1.0";
     public static final String QUERY_STATEMENT ="select  * from  S3Object s";
-    private final JsonFactory jsonFactory = new JsonFactory();
-    public static final String schemaJsonString = "{\"namespace\": \"org.opensearch\",\"type\": \"record\","
+    public final String schemaJsonString = "{\"namespace\": \"org.opensearch\",\"type\": \"record\","
             + "\"name\": \"parquetRecords\",\"fields\": [ {\"name\": \"SlNo\", \"type\": \"int\"}"
             + ", {\"name\": \"eventVersion\", \"type\": \"string\"}]}";
 
@@ -55,13 +56,13 @@ public class ParquetRecordsGenerator implements RecordsGenerator{
                     .withConf(new Configuration())
                     .withDictionaryEncoding(false)
                     .build()) {
-                for (GenericData.Record record : recordList) {
-                    writer.write(record);
+                for (GenericData.Record parquetRecord : recordList) {
+                    writer.write(parquetRecord);
                 }
             }
             outputStream.write(Files.readAllBytes(filePath));
         } catch (Exception ex) {
-            ex.printStackTrace(System.out);
+            LOG.error("Error while writing parquet file.",ex);
         }finally {
             Files.deleteIfExists(filePath);
             Files.deleteIfExists(Paths.get("."+filePath+PARQUET_CHECKSUM));

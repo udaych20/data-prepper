@@ -54,7 +54,6 @@ import static org.mockito.Mockito.when;
 
 class S3SelectObjectWorkerIT {
     private static final int TIMEOUT_IN_MILLIS = 200;
-    private S3Client s3Client;
     private S3AsyncClient s3AsyncClient;
     private S3ObjectGenerator s3ObjectGenerator;
     private Buffer<Record<Event>> buffer;
@@ -65,7 +64,7 @@ class S3SelectObjectWorkerIT {
 
     @BeforeEach
     void setUp() {
-        s3Client = S3Client.builder()
+        S3Client s3Client = S3Client.builder()
                 .region(Region.of(System.getProperty("tests.s3source.region")))
                 .build();
         s3AsyncClient = S3AsyncClient.builder()
