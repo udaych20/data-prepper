@@ -9,13 +9,14 @@ import org.opensearch.dataprepper.metrics.PluginMetrics;
 import org.opensearch.dataprepper.model.annotations.DataPrepperPlugin;
 import org.opensearch.dataprepper.model.annotations.DataPrepperPluginConstructor;
 import org.opensearch.dataprepper.model.buffer.Buffer;
+import org.opensearch.dataprepper.model.codec.InputCodec;
 import org.opensearch.dataprepper.model.configuration.PluginModel;
 import org.opensearch.dataprepper.model.configuration.PluginSetting;
 import org.opensearch.dataprepper.model.event.Event;
 import org.opensearch.dataprepper.model.plugin.PluginFactory;
 import org.opensearch.dataprepper.model.record.Record;
 import org.opensearch.dataprepper.model.source.Source;
-import org.opensearch.dataprepper.plugins.source.codec.Codec;
+import org.opensearch.dataprepper.model.acknowledgements.AcknowledgementSetManager;
 import org.opensearch.dataprepper.plugins.source.ownership.BucketOwnerProvider;
 import org.opensearch.dataprepper.plugins.source.ownership.ConfigBucketOwnerProviderFactory;
 import org.opensearch.dataprepper.plugins.source.configuration.S3SelectOptions;
@@ -33,12 +34,21 @@ public class S3Source implements Source<Record<Event>> {
     private final S3SourceConfig s3SourceConfig;
     private SqsService sqsService;
     private final PluginFactory pluginFactory;
+    private final AcknowledgementSetManager acknowledgementSetManager;
+    private final boolean acknowledgementsEnabled;
 
     @DataPrepperPluginConstructor
-    public S3Source(PluginMetrics pluginMetrics, final S3SourceConfig s3SourceConfig, final PluginFactory pluginFactory) {
+    public S3Source(PluginMetrics pluginMetrics, final S3SourceConfig s3SourceConfig, final PluginFactory pluginFactory, final AcknowledgementSetManager acknowledgementSetManager) {
         this.pluginMetrics = pluginMetrics;
         this.s3SourceConfig = s3SourceConfig;
         this.pluginFactory = pluginFactory;
+        this.acknowledgementsEnabled = s3SourceConfig.getAcknowledgements();
+        this.acknowledgementSetManager = acknowledgementSetManager;
+    }
+
+    @Override
+    public boolean areAcknowledgementsEnabled() {
+        return acknowledgementsEnabled;
     }
 
     @Override
@@ -70,12 +80,12 @@ public class S3Source implements Source<Record<Event>> {
                     s3SelectCSVOption(csvOption).s3SelectJsonOption(jsonOption)
                     .expressionType(s3SelectOptional.get().getExpressionType())
                     .compressionType(CompressionType.valueOf(s3SelectOptional.get().getCompressionType().toUpperCase()))
-                    .s3SelectResponseHandler(new S3SelectResponseHandler()).build();
+                    .s3SelectResponseHandlerFactory(new S3SelectResponseHandlerFactory()).build();
             s3Handler = new S3SelectObjectWorker(s3ObjectRequest);
         } else {
             final PluginModel codecConfiguration = s3SourceConfig.getCodec();
             final PluginSetting codecPluginSettings = new PluginSetting(codecConfiguration.getPluginName(), codecConfiguration.getPluginSettings());
-            final Codec codec = pluginFactory.loadPlugin(Codec.class, codecPluginSettings);
+            final InputCodec codec = pluginFactory.loadPlugin(InputCodec.class, codecPluginSettings);
             final S3ObjectRequest s3ObjectRequest = s3ObjectRequestBuilder
                     .bucketOwnerProvider(bucketOwnerProvider)
                     .codec(codec)
@@ -86,7 +96,7 @@ public class S3Source implements Source<Record<Event>> {
             s3Handler = new S3ObjectWorker(s3ObjectRequest);
         }
         final S3Service s3Service = new S3Service(s3Handler);
-        sqsService = new SqsService(s3SourceConfig, s3Service, pluginMetrics);
+        sqsService = new SqsService(acknowledgementSetManager, s3SourceConfig, s3Service, pluginMetrics);
 
         sqsService.start();
     }

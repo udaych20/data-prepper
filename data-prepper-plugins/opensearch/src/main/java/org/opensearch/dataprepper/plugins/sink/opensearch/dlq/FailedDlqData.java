@@ -2,6 +2,9 @@ package org.opensearch.dataprepper.plugins.sink.opensearch.dlq;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.opensearch.dataprepper.model.event.EventHandle;
+
 public class FailedDlqData {
 
     private final String index;
@@ -10,7 +13,10 @@ public class FailedDlqData {
     private final String message;
     private final Object document;
 
-    private FailedDlqData(final String index, final String indexId, final int status, final String message, final Object document) {
+    @JsonIgnore
+    private final EventHandle eventHandle;
+
+    private FailedDlqData(final String index, final String indexId, final int status, final String message, final Object document, final EventHandle eventHandle) {
         Objects.requireNonNull(index);
         this.index = index;
         this.indexId = indexId;
@@ -19,6 +25,7 @@ public class FailedDlqData {
         this.message = message;
         Objects.requireNonNull(document);
         this.document = document;
+        this.eventHandle = eventHandle;
     }
 
     public String getIndex() {
@@ -39,6 +46,10 @@ public class FailedDlqData {
 
     public Object getDocument() {
         return document;
+    }
+
+    public EventHandle getEventHandle() {
+        return eventHandle;
     }
 
     @Override
@@ -81,6 +92,7 @@ public class FailedDlqData {
 
         private String index;
         private String indexId;
+        private EventHandle eventHandle;
 
         private int status = 0;
 
@@ -113,8 +125,13 @@ public class FailedDlqData {
             return this;
         }
 
+        public Builder withEventHandle(final EventHandle eventHandle) {
+            this.eventHandle = eventHandle;
+            return this;
+        }
+
         public FailedDlqData build() {
-            return new FailedDlqData(index, indexId, status, message, document);
+            return new FailedDlqData(index, indexId, status, message, document, eventHandle);
         }
     }
 }
