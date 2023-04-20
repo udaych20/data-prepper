@@ -261,7 +261,6 @@ public class S3SelectObjectWorker implements S3ObjectHandler {
                     } catch (final Exception ex) {
                         LOG.error("Failed writing S3 objects to buffer due to: {}", ex.getMessage());
                     }
-
                 }
             }
         }
