@@ -27,7 +27,7 @@ public class SNSSinkConfig {
     @Valid
     private AwsAuthenticationOptions awsAuthenticationOptions;
 
-    @JsonProperty("topic_arn")
+    @JsonProperty("topic")
     @NotNull
     @NotEmpty
     private String topicArn;

@@ -19,7 +19,6 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.21'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-common:1.8.21'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
-//    implementation project(path: ':data-prepper-plugins:s3-sink')
     testImplementation project(':data-prepper-test-common')
 }
 

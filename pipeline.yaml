@@ -1,0 +1,18 @@
+sns-sink-plugin-pipeline:
+  source:
+    random:
+  sink:
+    - sns:
+        topic_arn: arn:aws:sns:ap-south-1:524239988944:my-topic
+        id: test
+        aws:
+          region: ap-south-1
+          sts_role_arn: arn:aws:iam::524239988944:role/app-test
+        codec:
+          ndjson:
+        max_retries: 5
+        threshold:
+          event_count: 20
+          maximum_size: 50mb
+          event_collect_timeout: 15s
+        buffer_type: in_memory
