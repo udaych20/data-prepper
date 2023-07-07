@@ -13,8 +13,7 @@ import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.retry.RetryPolicy;
 import software.amazon.awssdk.services.sns.SnsClient;
 
-public class SnsClientFactory {
-    private SnsClientFactory() { }
+public class SNSClientFactory {
 
     public static SnsClient createSNSClient(final SNSSinkConfig snsSinkConfig,
                                      final AwsCredentialsSupplier awsCredentialsSupplier) {

@@ -39,8 +39,6 @@ public class SNSSinkConfig {
     @NotNull
     private ThresholdOptions thresholdOptions;
 
-
-
     @JsonProperty("codec")
     @NotNull
     private PluginModel codec;

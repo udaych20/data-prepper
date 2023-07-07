@@ -69,7 +69,7 @@ public class SNSSink extends AbstractSink<Record<Event>> {
         } else {
             bufferFactory = new InMemoryBufferFactory();
         }
-        final SnsClient snsClient = SnsClientFactory.createSNSClient(snsSinkConfig, awsCredentialsSupplier);
+        final SnsClient snsClient = SNSClientFactory.createSNSClient(snsSinkConfig, awsCredentialsSupplier);
         snsSinkService = new SNSSinkService(snsSinkConfig, bufferFactory,snsClient,Objects.nonNull(sinkContext) ? sinkContext.getTagsTargetKey() : null,pluginMetrics);
 
     }
