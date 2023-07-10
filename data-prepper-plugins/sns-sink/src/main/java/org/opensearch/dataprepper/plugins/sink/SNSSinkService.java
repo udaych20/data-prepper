@@ -2,12 +2,9 @@
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-
 package org.opensearch.dataprepper.plugins.sink;
 
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.DistributionSummary;
-
 
 import org.opensearch.dataprepper.metrics.PluginMetrics;
 import org.opensearch.dataprepper.model.event.Event;
@@ -23,7 +20,6 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 import software.amazon.awssdk.services.sns.model.PublishResponse;
-import software.amazon.awssdk.services.sns.model.SnsException;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -38,28 +34,36 @@ import java.util.concurrent.locks.ReentrantLock;
 public class SNSSinkService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SNSSinkService.class);
-    public static final String OBJECTS_SUCCEEDED = "snsSinkObjectsSucceeded";
-    public static final String OBJECTS_FAILED = "snsSinkObjectsFailed";
+
     public static final String NUMBER_OF_RECORDS_FLUSHED_TO_SNS_SUCCESS = "snsSinkObjectsEventsSucceeded";
+
     public static final String NUMBER_OF_RECORDS_FLUSHED_TO_SNS_FAILED = "snsSinkObjectsEventsFailed";
-    static final String SNS_OBJECTS_SIZE = "snsSinkObjectSizeBytes";
+
     private final SNSSinkConfig snsSinkConfig;
+
     private final Lock reentrantLock;
+
     private final BufferFactory bufferFactory;
+
     private final Collection<EventHandle> bufferedEventHandles;
+
     private final SnsClient snsClient;
+
     private Buffer currentBuffer;
+
     private final int maxEvents;
+
     private final ByteCount maxBytes;
+
     private final long maxCollectionDuration;
+
     private final String topicName;
+
     private final int maxRetries;
-    private final Counter objectsSucceededCounter;
-    private final Counter objectsFailedCounter;
+
     private final Counter numberOfRecordsSuccessCounter;
+
     private final Counter numberOfRecordsFailedCounter;
-    private final DistributionSummary snsObjectSizeSummary;
-    private final String tagsTargetKey;
 
     /**
      * @param snsSinkConfig  sns sink related configuration.
@@ -70,28 +74,20 @@ public class SNSSinkService {
     public SNSSinkService(final SNSSinkConfig snsSinkConfig,
                           final BufferFactory bufferFactory,
                           final SnsClient snsClient,
-                          final String tagsTargetKey,
                           final PluginMetrics pluginMetrics) {
         this.snsSinkConfig = snsSinkConfig;
         this.bufferFactory = bufferFactory;
         this.snsClient = snsClient;
-        this.tagsTargetKey = tagsTargetKey;
         this.reentrantLock = new ReentrantLock();
-
         this.bufferedEventHandles = new LinkedList<>();
-
         this.maxEvents = snsSinkConfig.getThresholdOptions().getEventCount();
         this.maxBytes = snsSinkConfig.getThresholdOptions().getMaximumSize();
         this.maxCollectionDuration = snsSinkConfig.getThresholdOptions().getEventCollectTimeOut().getSeconds();
-
         this.topicName = snsSinkConfig.getTopicArn();
         this.maxRetries = snsSinkConfig.getMaxUploadRetries();
 
-        this.objectsSucceededCounter = pluginMetrics.counter(OBJECTS_SUCCEEDED);
-        this.objectsFailedCounter = pluginMetrics.counter(OBJECTS_FAILED);
         this.numberOfRecordsSuccessCounter = pluginMetrics.counter(NUMBER_OF_RECORDS_FLUSHED_TO_SNS_SUCCESS);
         this.numberOfRecordsFailedCounter = pluginMetrics.counter(NUMBER_OF_RECORDS_FLUSHED_TO_SNS_FAILED);
-        this.snsObjectSizeSummary = pluginMetrics.summary(SNS_OBJECTS_SIZE);
     }
 
 
@@ -106,8 +102,6 @@ public class SNSSinkService {
         try {
             for (Record<Event> record : records) {
                 final Event event = record.getData();
-                final String encodedEvent;
-                final String topicArn = snsSinkConfig.getTopicArn();
                 final byte[] encodedBytes = event.toJsonString().getBytes();
                 currentBuffer.writeEvent(encodedBytes);
                 if (event.getEventHandle() != null) {
@@ -116,17 +110,13 @@ public class SNSSinkService {
                 if (checkThresholdExceed(currentBuffer, maxEvents, maxBytes, maxCollectionDuration)) {
                     LOG.info("Writing {} to SNS with {} events and size of {} bytes.",
                             currentBuffer.getEventCount(), currentBuffer.getSize());
-                    final boolean isFlushToSNS = retryFlushToSNS(currentBuffer, topicName );
+                    final boolean isFlushToSNS = retryFlushToSNS(currentBuffer, topicName);
                     if (isFlushToSNS) {
                         numberOfRecordsSuccessCounter.increment(currentBuffer.getEventCount());
-                        objectsSucceededCounter.increment();
-                        snsObjectSizeSummary.record(currentBuffer.getSize());
-                        releaseEventHandles(true);
                     } else {
                         numberOfRecordsFailedCounter.increment(currentBuffer.getEventCount());
-                        objectsFailedCounter.increment();
-                        releaseEventHandles(false);
                     }
+                    releaseEventHandles(true);
                     currentBuffer = bufferFactory.getBuffer();
                 }
             }
@@ -199,12 +189,12 @@ public class SNSSinkService {
             PublishRequest request = PublishRequest.builder()
                     .message(new String(sinkBufferData))
                     .topicArn(topicName)
-                    .subject("test")
+                    .subject(snsSinkConfig.getId())
                     .build();
             PublishResponse result = snsClient.publish(request);
             LOG.info(result.messageId() + " Message sent. Status is " + result.sdkHttpResponse().statusCode());
-        }catch (SnsException e) {
-            LOG.error("Exception while publishing message: ",e.awsErrorDetails().errorMessage());
+        }catch (Exception e) {
+            throw e;
         }
     }
 

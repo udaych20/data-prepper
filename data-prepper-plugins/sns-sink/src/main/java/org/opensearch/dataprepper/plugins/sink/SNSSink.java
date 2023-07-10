@@ -2,7 +2,6 @@
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-
 package org.opensearch.dataprepper.plugins.sink;
 
 import org.opensearch.dataprepper.aws.api.AwsCredentialsSupplier;
@@ -26,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.sns.SnsClient;
 
 import java.util.Collection;
-import java.util.Objects;
 
 /**
  * Implementation class of sns-sink plugin. It is responsible for receive the collection of
@@ -41,8 +39,6 @@ public class SNSSink extends AbstractSink<Record<Event>> {
     private final SNSSinkService snsSinkService;
     private final BufferFactory bufferFactory;
 
-    private final SinkContext sinkContext;
-
     /**
      * @param pluginSetting dp plugin settings.
      * @param snsSinkConfig sns sink configurations.
@@ -56,13 +52,12 @@ public class SNSSink extends AbstractSink<Record<Event>> {
                   final AwsCredentialsSupplier awsCredentialsSupplier) {
         super(pluginSetting);
         this.snsSinkConfig = snsSinkConfig;
-        this.sinkContext = sinkContext;
         final PluginModel codecConfiguration = snsSinkConfig.getCodec();
         final PluginSetting codecPluginSettings = new PluginSetting(codecConfiguration.getPluginName(),
                 codecConfiguration.getPluginSettings());
+        // TODO: Sink codec changes are pending
 //        codec = pluginFactory.loadPlugin(Codec.class, codecPluginSettings);
         sinkInitialized = Boolean.FALSE;
-
 
         if (snsSinkConfig.getBufferType().equals(BufferTypeOptions.LOCALFILE)) {
             bufferFactory = new LocalFileBufferFactory();
@@ -70,7 +65,7 @@ public class SNSSink extends AbstractSink<Record<Event>> {
             bufferFactory = new InMemoryBufferFactory();
         }
         final SnsClient snsClient = SNSClientFactory.createSNSClient(snsSinkConfig, awsCredentialsSupplier);
-        snsSinkService = new SNSSinkService(snsSinkConfig, bufferFactory,snsClient,Objects.nonNull(sinkContext) ? sinkContext.getTagsTargetKey() : null,pluginMetrics);
+        snsSinkService = new SNSSinkService(snsSinkConfig, bufferFactory,snsClient,pluginMetrics);
 
     }
 

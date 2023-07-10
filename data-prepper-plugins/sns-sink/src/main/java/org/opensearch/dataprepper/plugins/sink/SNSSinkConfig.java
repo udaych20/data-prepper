@@ -2,7 +2,6 @@
  * Copyright OpenSearch Contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-
 package org.opensearch.dataprepper.plugins.sink;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -15,7 +14,7 @@ import org.opensearch.dataprepper.plugins.sink.configuration.BufferTypeOptions;
 import org.opensearch.dataprepper.plugins.sink.configuration.ThresholdOptions;
 
 /**
- * s3 sink configuration class contains properties, used to read yaml configuration.
+ * sns sink configuration class contains properties, used to read yaml configuration.
  */
 public class SNSSinkConfig {
 
@@ -74,8 +73,6 @@ public class SNSSinkConfig {
     public String getId() {
         return id;
     }
-
-
 
     /**
      * Sink codec configuration Options.
